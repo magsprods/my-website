@@ -1,0 +1,166 @@
+/* ===== 1. TEMALAR ===== */
+/* İşıqlı tema: ağ fon, qara yazı */
+:root{
+  --bg:#ffffff;
+  --fg:#0a0a0a;
+  --mute:#6b6b6b;
+  --line:#e5e5e5;
+  --soft:#f6f6f6;
+  --on-fg:#ffffff;
+}
+/* Qaranlıq tema: qara fon, ağ yazı */
+:root[data-theme="dark"]{
+  --bg:#0a0a0a;
+  --fg:#fafafa;
+  --mute:#9a9a9a;
+  --line:#262626;
+  --soft:#141414;
+  --on-fg:#0a0a0a;
+}
+
+/* ===== 2. ÜMUMİ ===== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 "Inter",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+h1{font-size:34px;margin-bottom:8px}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px 64px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
+
+/* ===== 3. MENYU ===== */
+nav{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;padding:24px 0 32px}
+.logo{font-weight:700;font-size:20px;letter-spacing:-.03em;text-decoration:none;color:var(--fg)}
+.navr{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.me{font-size:14px;color:var(--mute);margin-left:4px}
+.me b{color:var(--fg);font-weight:600}
+
+/* ===== 4. DÜYMƏLƏR ===== */
+.btn{background:var(--fg);color:var(--on-fg);border:1px solid var(--fg);border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:500;font-size:15px}
+.btn:hover{opacity:.8;transform:translateY(-1px)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn.alt{background:transparent;color:var(--fg);border-color:var(--line)}
+.btn.alt:hover{border-color:var(--fg);opacity:1}
+.link{background:none;border:0;cursor:pointer;color:var(--mute);padding:6px 10px;border-radius:999px;font-size:15px}
+.link:hover{color:var(--fg)}
+
+/* Tema ikonu */
+.icon-btn{
+  position:relative;
+  width:38px;height:38px;border-radius:50%;
+  background:transparent;color:var(--fg);
+  border:1px solid var(--line);cursor:pointer;
+}
+.icon-btn:hover{border-color:var(--fg)}
+.icon-btn svg{
+  position:absolute;top:50%;left:50%;margin:-9px 0 0 -9px;
+  width:18px;height:18px;
+  fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  transition:transform .35s ease, opacity .25s ease;
+}
+.i-moon{opacity:1;transform:rotate(0) scale(1)}
+.i-sun{opacity:0;transform:rotate(-90deg) scale(.5)}
+:root[data-theme="dark"] .i-moon{opacity:0;transform:rotate(90deg) scale(.5)}
+:root[data-theme="dark"] .i-sun{opacity:1;transform:rotate(0) scale(1)}
+
+/* ===== 5. SAHƏ FİLTRLƏRİ ===== */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 28px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:14px;color:var(--mute)}
+.chip:hover{border-color:var(--fg);color:var(--fg)}
+.chip.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
+
+/* ===== 6. SUAL SİYAHISI ===== */
+.q{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:20px 0;cursor:pointer}
+.q:last-of-type{border-bottom:1px solid var(--line)}
+.q:hover h3{text-decoration:underline;text-underline-offset:4px}
+.q h3{font-size:18px;margin-bottom:6px}
+.meta{font-size:14px;color:var(--mute)}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:0 10px;font-size:12px;margin-right:8px;color:var(--mute)}
+
+/* ===== 7. SUAL SƏHİFƏSİ ===== */
+.card{border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}
+.card h2{font-size:28px;margin-bottom:10px}
+.card h3{font-size:16px;margin-bottom:4px;color:var(--mute);font-weight:500}
+.body{white-space:pre-wrap;margin:16px 0}
+.ans{border-top:1px solid var(--line);padding:18px 0}
+.ans:first-of-type{margin-top:8px}
+.ans.good{border:2px solid var(--fg);border-radius:12px;padding:16px;margin:8px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.checkform{display:flex;gap:8px;margin-top:16px}
+.checkform input{flex:1}
+
+/* ===== 8. FORMLAR ===== */
+label{display:block;font-size:14px;font-weight:500;margin:20px 0 6px}
+input,select,textarea{width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--soft)}
+input:focus,select:focus,textarea:focus{border-color:var(--fg);outline:none}
+textarea{min-height:120px;resize:vertical}
+.hint{font-size:13px;color:var(--mute);margin-top:12px}
+
+/* ===== 9. BİLDİRİŞLƏR ===== */
+.note{padding:12px 16px;border:1px solid var(--fg);border-radius:10px;margin-bottom:20px;font-size:15px}
+.note.bad{border-style:dashed;color:var(--mute)}
+
+/* ===== 10. REYTİNQ CƏDVƏLİ ===== */
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th{font-size:13px;font-weight:500;color:var(--mute);text-align:left;padding:8px 12px;border-bottom:1px solid var(--fg)}
+td{padding:14px 12px;border-bottom:1px solid var(--line)}
+tr.you td{font-weight:600;background:var(--soft)}
+
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
+
+/* ===== 11. MƏZMUN BLOKLARI ===== */
+.intro{margin:0 0 8px}
+.intro p,.area-info{color:var(--mute);max-width:52ch;margin:0}
+.stats{display:flex;gap:32px;margin:24px 0 8px}
+.stats b{display:block;font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.stats span{font-size:13px;color:var(--mute)}
+
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;border-top:1px solid var(--line);padding-top:28px;margin-top:48px}
+.how h3{font-size:15px;margin-bottom:4px}
+.how p{margin:0;font-size:14px;color:var(--mute)}
+
+.cta{border:1px dashed var(--line);border-radius:16px;padding:28px;text-align:center;margin-top:28px}
+.cta p{margin:0 0 14px;color:var(--mute)}
+
+/* ===== 12. GİRİŞ VƏ HESAB ===== */
+#auth{display:flex;align-items:center;gap:8px;margin-left:6px}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--fg);color:var(--on-fg);display:grid;place-items:center;font-size:14px;font-weight:600;flex:none}
+.auth-card{max-width:400px;margin:24px auto 0}
+.auth-card h1{margin-bottom:6px}
+.auth-card .area-info{margin-bottom:8px}
+.pw{position:relative}
+.pw input{padding-right:84px}
+.pw-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mute);cursor:pointer;font-size:13px;padding:6px 10px;border-radius:999px}
+.pw-btn:hover{color:var(--fg)}
+.auth-switch{text-align:center;margin:20px 0 4px;color:var(--mute);font-size:15px}
+.auth-card .btn{width:100%;padding:11px 18px}
+
+/* ===== 13. ANİMASİYALAR ===== */
+body{transition:background-color .25s ease, color .25s ease}
+.card, input, select, textarea, .chip, .btn, .icon-btn, .q, td, th{
+  transition:background-color .25s ease, color .25s ease, border-color .25s ease, opacity .15s ease, transform .15s ease;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.fade{animation:fadeUp .3s ease both}
+.note{animation:fadeUp .25s ease both}
+
+/* ===== 14. TELEFON ===== */
+@media(max-width:560px){
+  h1{font-size:28px}
+  .card{padding:18px}
+  .checkform{flex-direction:column}
+  .how{grid-template-columns:1fr}
+  .stats{gap:24px}
+  .me{display:none}
+}
+
+/* Hərəkət həssaslığı: ən sonda olmalıdır */
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after{
+    animation-duration:.01ms !important;
+    animation-delay:0s !important;
+    transition-duration:.01ms !important;
+  }
+}
