@@ -169,12 +169,20 @@ function listHTML() {
   const chips = ["Hamısı", ...AREAS].map(a =>
     `<button class="chip ${view.area === a ? "on" : ""}" data-act="area" data-area="${esc(a)}">${esc(a)}</button>`).join("");
 
+  // Hər sual dördbucaqlı kart olur; --i animasiyanın ardıcıllığını təyin edir
   const list = state.questions.filter(q => all || q.area === view.area);
-  const items = list.map(q => `
-    <button class="q" data-act="open" data-id="${q.id}">
+  const items = list.map((q, i) => `
+    <button class="qcard" style="--i:${i}" data-act="open" data-id="${q.id}">
+      <div class="tags">
+        <span class="tag">${esc(q.area)}</span>
+        <span class="tag">${q.type === "check" ? "Tapşırıq" : "Müzakirə"}</span>
+      </div>
       <h3>${esc(q.title)}</h3>
-      <div class="meta"><span class="tag">${esc(q.area)}</span><span class="tag">${q.type === "check" ? "Tapşırıq" : "Müzakirə"}</span>
-      ${esc(q.author)} · ${q.answers.length} cavab · ${q.votes} səs</div>
+      <p class="excerpt">${esc(q.body)}</p>
+      <div class="foot">
+        <span>${esc(q.author)} · ${q.answers.length} cavab · ${q.votes} səs</span>
+        <span class="go" aria-hidden="true">→</span>
+      </div>
     </button>`).join("");
 
   const nQ = state.questions.length;
@@ -204,7 +212,9 @@ function listHTML() {
   const cta = `<div class="cta"><p>Cavabını axtardığın sual yoxdur?</p>
       <button class="btn" data-act="go" data-view="new">Sual yaz</button></div>`;
 
-  return `${head}<div class="chips">${chips}</div>${items || "<p>Bu sahədə hələ sual yoxdur. İlk sualı siz yazın.</p>"}${cta}${how}`;
+  const grid = items ? `<div class="qgrid">${items}</div>` : "<p>Bu sahədə hələ sual yoxdur. İlk sualı siz yazın.</p>";
+
+  return `${head}<div class="chips">${chips}</div>${grid}${cta}${how}`;
 }
 
 function detailHTML() {
@@ -277,9 +287,43 @@ function authHTML(mode) {
       <input id="ae" name="email" type="email" autocomplete="email" value="${esc(draft.email || "")}" required>
       <label for="ap">Parol</label>
       <div class="pw">
-        <input id="ap" name="pass" type="password" autocomplete="${reg ? "new-password" : "current-password"}" required>
-        <button type="button" class="pw-btn" data-act="pw">Göstər</button>
-      </div>
+  <input
+    id="ap"
+    name="pass"
+    type="password"
+    autocomplete="${reg ? "new-password" : "current-password"}"
+    required
+  >
+
+  <button
+    type="button"
+    class="pw-btn"
+    data-act="pw"
+    aria-label="Şifrəni göstər"
+    title="Şifrəni göstər"
+  >
+    <svg class="pw-eye" viewBox="0 0 24 24" aria-hidden="true">
+
+      <path
+        class="pw-eye-outline"
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+      />
+
+      <circle
+        class="pw-eye-pupil"
+        cx="12"
+        cy="12"
+        r="2.7"
+      />
+
+      <path
+        class="pw-eye-closed"
+        d="M3 12c2.8 2.2 5.8 3.3 9 3.3s6.2-1.1 9-3.3"
+      />
+
+    </svg>
+  </button>
+</div>
       ${reg ? `<label for="ac">Parolu təkrarlayın</label>
         <div class="pw"><input id="ac" name="pass2" type="password" autocomplete="new-password" required></div>
         <p class="hint">Ən azı 8 simvol.</p>` : ""}
@@ -363,13 +407,49 @@ function handle(e) {
   const act = b.dataset.act, id = +b.dataset.id;
   const q = state.questions.find(x => x.id === id);
 
-  // Parolu göstər/gizlət
-  if (act === "pw") {
-    const inp = b.parentElement.querySelector("input");
-    inp.type = inp.type === "password" ? "text" : "password";
-    b.textContent = inp.type === "password" ? "Göstər" : "Gizlət";
-    return;
-  }
+// Parolu göstər/gizlət
+if (act === "pw") {
+  const inp = b.parentElement.querySelector("input");
+  const isHidden = inp.type === "password";
+
+  // Input tipini dəyiş
+  inp.type = isHidden ? "text" : "password";
+
+  // Gözün vəziyyətini dəyiş
+  b.classList.toggle("active", isHidden);
+
+  // Klik animasiyası
+  b.classList.remove("clicked");
+
+  // Animasiya yenidən başlasın
+  void b.offsetWidth;
+
+  b.classList.add("clicked");
+
+  // Accessibility
+  b.setAttribute(
+    "aria-label",
+    isHidden ? "Şifrəni gizlət" : "Şifrəni göstər"
+  );
+
+  b.setAttribute(
+    "title",
+    isHidden ? "Şifrəni gizlət" : "Şifrəni göstər"
+  );
+
+  // Input animasiyası
+  const pwBox = b.parentElement;
+
+  pwBox.classList.remove("show", "hide-animation");
+
+  void pwBox.offsetWidth;
+
+  pwBox.classList.add(
+    isHidden ? "show" : "hide-animation"
+  );
+
+  return;
+}
 
   // Çıxış
   if (act === "logout") {
