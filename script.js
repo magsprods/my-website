@@ -8,17 +8,18 @@ const AUTH_READY = !SUPABASE_URL.startsWith("BURA") && !SUPABASE_KEY.startsWith(
 const sb = AUTH_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let ME = null;     // istifadəçi adı, null = qonaq
-let ME_ID = null, ME_EMAIL = "";   // profil ayarları üçün
+let ME_ID = null, ME_EMAIL = "", ME_AVATAR = "";   // profil ayarları üçün
 let draft = {};    // xəta olanda yazılanları itirməmək üçün
 
 // Sessiyaya görə profili bazadan yükləyir
 async function loadMe(session) {
-  if (!sb || !session) { ME = null; ME_ID = null; ME_EMAIL = ""; return; }
+  if (!sb || !session) { ME = null; ME_ID = null; ME_EMAIL = ""; ME_AVATAR = ""; return; }
   const { data } = await sb.from("profiles")
-    .select("username, points").eq("id", session.user.id).single();
+    .select("username, points, avatar_url").eq("id", session.user.id).single();
   if (data) {
     ME_ID = session.user.id;
     ME_EMAIL = session.user.email || "";
+    ME_AVATAR = data.avatar_url || "";
     ME = data.username;
     state.points[ME] = data.points;
   }
@@ -133,6 +134,14 @@ function level(p) { return p < 50 ? "Yeni üzv" : p < 150 ? "Araşdırıcı" : p
 // ============ 5. EKRANLAR ============
 const app = document.getElementById("app");
 
+// Profil şəkli varsa şəkli, yoxdursa adın ilk hərfini göstərir
+function avatarHTML(big) {
+  const c = "avatar" + (big ? " big" : "");
+  return ME_AVATAR
+    ? `<img class="${c}" src="${esc(ME_AVATAR)}" alt="">`
+    : `<span class="${c}" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>`;
+}
+
 function renderAuth() {
   const box = document.getElementById("auth");
   if (!box) return;
@@ -141,7 +150,7 @@ function renderAuth() {
       <button class="btn alt" data-act="go" data-view="register">Qeydiyyat</button>`;
   } else {
     box.innerHTML = `<button class="me-btn" data-act="go" data-view="profile" title="Profil və ayarlar" aria-label="Profil və ayarlar">
-        <span class="avatar" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>
+        ${avatarHTML(false)}
         <span class="me">${esc(ME)} · <b>${state.points[ME] || 0}</b> xal</span>
       </button>
       <button class="link" data-act="logout">Çıxış</button>`;
@@ -347,17 +356,74 @@ function boardHTML() {
     <p class="hint">Xal: tapşırıq həlli, faydalı cavab (+15), suala və cavaba səs (+2).</p>`;
 }
 
+// Şəkli kvadrat kəsib 256x256-ya kiçildir (yükləmə tez olsun)
+function resizeImage(file, size) {
+  return new Promise(res => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(img.width, img.height);
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      URL.revokeObjectURL(u);
+      c.toBlob(res, "image/jpeg", 0.85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); res(null); };
+    img.src = u;
+  });
+}
+
+async function uploadAvatar(file) {
+  if (!file) return;
+  const fail = t => { note = { text: t, bad: true }; render(); };
+  if (!sb || !ME_ID) return fail("Əməliyyat üçün yenidən daxil olun.");
+  if (!file.type.startsWith("image/")) return fail("Yalnız şəkil faylı seçin.");
+  if (file.size > 10 * 1024 * 1024) return fail("Şəkil 10 MB-dan böyük olmamalıdır.");
+
+  const blob = await resizeImage(file, 256);
+  if (!blob) return fail("Şəkil oxunmadı.");
+
+  const path = ME_ID + "/avatar.jpg";
+  const { error } = await sb.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+  if (error) return fail("Şəkil yüklənmədi: " + error.message);
+
+  // ?v=... brauzerin köhnə şəkli keşdən göstərməməsi üçündür
+  const url = sb.storage.from("avatars").getPublicUrl(path).data.publicUrl + "?v=" + Date.now();
+  const { error: e2 } = await sb.from("profiles").update({ avatar_url: url }).eq("id", ME_ID);
+  if (e2) return fail("Şəkil saxlanmadı: " + e2.message);
+
+  ME_AVATAR = url;
+  note = { text: "Profil şəkli yeniləndi." };
+  render();
+}
+
+async function removeAvatar() {
+  const fail = t => { note = { text: t, bad: true }; render(); };
+  if (!sb || !ME_ID) return fail("Əməliyyat üçün yenidən daxil olun.");
+  await sb.storage.from("avatars").remove([ME_ID + "/avatar.jpg"]);
+  const { error } = await sb.from("profiles").update({ avatar_url: null }).eq("id", ME_ID);
+  if (error) return fail("Şəkil silinmədi: " + error.message);
+  ME_AVATAR = "";
+  note = { text: "Profil şəkli silindi." };
+  render();
+}
+
 function profileHTML() {
   const p = state.points[ME] || 0;
   const nQ = state.questions.filter(q => q.author === ME).length;
   const nA = state.questions.reduce((s, q) => s + q.answers.filter(a => a.author === ME).length, 0);
   return `<h1>Profilim</h1>
     <div class="card profile-head">
-      <span class="avatar big" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>
+      ${avatarHTML(true)}
       <div>
         <h2>${esc(ME)}</h2>
         <p class="meta">${esc(ME_EMAIL)}</p>
         <p class="meta">${level(p)} · ${p} xal · ${nQ} sual · ${nA} cavab</p>
+        <div class="row">
+          <input type="file" id="avfile" accept="image/*" hidden>
+          <button class="btn alt" data-act="avpick">${ME_AVATAR ? "Şəkli dəyiş" : "Şəkil əlavə et"}</button>
+          ${ME_AVATAR ? `<button class="link" data-act="avdel">Sil</button>` : ""}
+        </div>
       </div>
     </div>
 
@@ -533,6 +599,10 @@ if (act === "pw") {
   return;
 }
 
+  // Profil şəkli
+  if (act === "avpick") { const f = document.getElementById("avfile"); if (f) f.click(); return; }
+  if (act === "avdel") { removeAvatar(); return; }
+
   // Çıxış
   if (act === "logout") {
     const done = () => {
@@ -563,6 +633,9 @@ if (act === "pw") {
 }
 
 app.addEventListener("click", handle);
+app.addEventListener("change", e => {
+  if (e.target.id === "avfile") uploadAvatar(e.target.files[0]);
+});
 document.querySelector("nav").addEventListener("click", handle);
 
 app.addEventListener("submit", e => {

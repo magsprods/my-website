@@ -433,3 +433,5 @@ body{transition:background-color .25s ease, color .25s ease}
 .profile-head{display:flex;gap:18px;align-items:center}
 .profile-head h2{margin-bottom:2px}
 .profile-head .meta{margin:2px 0 0}
+
+img.avatar{object-fit:cover;display:block}
