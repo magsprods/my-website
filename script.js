@@ -844,8 +844,7 @@ if (sb) {
   const wrap   = document.getElementById('searchWrap');
   const input  = document.getElementById('searchInput');
   const toggle = document.getElementById('searchToggle');
-  const empty = document.getElementById('noResults');
-const empty = document.getElementById('noResults');
+  const empty  = document.getElementById('noResults');
 
 if (!root || !wrap || !input || !toggle) {
   console.warn('[axtarış] lazımi elementlər tapılmadı');
