@@ -757,10 +757,21 @@ if (act === "pw") {
 }
 
 app.addEventListener("click", handle);
+
 app.addEventListener("change", e => {
-  if (e.target.id === "avfile") uploadAvatar(e.target.files[0]);
+  if (e.target.id === "avfile") {
+    uploadAvatar(e.target.files[0]);
+  }
 });
-document.querySelector("nav").addEventListener("click", handle);
+
+// Yuxarı panel
+const topNav = document.querySelector(".bar");
+if (topNav) topNav.addEventListener("click", handle);
+
+// Aşağı panel
+const dockNav = document.querySelector(".dock");
+if (dockNav) dockNav.addEventListener("click", handle);
+
 
 document.addEventListener("submit", e => {
   e.preventDefault();
@@ -833,11 +844,14 @@ if (sb) {
   const wrap   = document.getElementById('searchWrap');
   const input  = document.getElementById('searchInput');
   const toggle = document.getElementById('searchToggle');
-  const empty  = document.getElementById('noResults');
-  if (!root || !wrap || !input || !toggle || !empty) {
-    console.warn('[axtarış] lazımi elementlər tapılmadı');
-    return;
-  }
+  const empty = document.getElementById('noResults');
+const empty = document.getElementById('noResults');
+
+if (!root || !wrap || !input || !toggle) {
+  console.warn('[axtarış] lazımi elementlər tapılmadı');
+  return;
+}
+
 
   // Azərbaycan hərflərini sadələşdirir: "eziz" yazanda "əziz" də tapılsın
   const MAP = { 'ə': 'e', 'ı': 'i', 'ö': 'o', 'ü': 'u', 'ş': 's', 'ç': 'c', 'ğ': 'g' };
@@ -848,38 +862,52 @@ if (sb) {
   const sig = (el) => el.tagName + '.' + el.className;
 
   // Sual kartlarını tapır: başlığı olan və eyni quruluşda təkrarlanan qonşu elementlər
-  function findCards() {
-    if (CARD_SELECTOR) {
-      const list = [...root.querySelectorAll(CARD_SELECTOR)];
-      if (list.length) return list;
-    }
-
-    const groups = new Map();
-    root.querySelectorAll(HEADINGS).forEach((h) => {
-      let el = h;
-      while (el.parentElement && el !== root) {
-        const p = el.parentElement;
-        const s = sig(el);
-        const same = [...p.children].filter(
-          (c) => sig(c) === s && (c.matches(HEADINGS) || c.querySelector(HEADINGS))
-        );
-        if (same.length >= 2) {
-          const key = p; // eyni valideyn = eyni qrup
-          const g = groups.get(key) || new Set();
-          same.forEach((c) => g.add(c));
-          groups.set(key, g);
-          break;
-        }
-        el = p;
-      }
-    });
-
-    let best = [];
-    groups.forEach((g) => { if (g.size > best.length) best = [...g]; });
-    return best;
+function findCards() {
+  if (CARD_SELECTOR) {
+    const list = [...root.querySelectorAll(CARD_SELECTOR)];
+    if (list.length) return list;
   }
 
-  function apply() {
+  const groups = new Map();
+
+  root.querySelectorAll(HEADINGS).forEach((h) => {
+    let el = h;
+
+    while (el.parentElement && el !== root) {
+      const p = el.parentElement;
+      const s = sig(el);
+
+      const same = [...p.children].filter(
+        (c) =>
+          sig(c) === s &&
+          (c.matches(HEADINGS) || c.querySelector(HEADINGS))
+      );
+
+      if (same.length >= 2) {
+        const key = p;
+        const g = groups.get(key) || new Set();
+
+        same.forEach((c) => g.add(c));
+        groups.set(key, g);
+        break;
+      }
+
+      el = p;
+    }
+  });
+
+  // Tapılan qruplardakı elementləri kart kimi qaytar
+  const cards = [];
+
+  groups.forEach((group) => {
+    group.forEach((el) => cards.push(el));
+  });
+
+  return cards;
+}
+
+
+    function apply() {
     const q = norm(input.value);
     const cards = findCards();
     let shown = 0;

@@ -10,7 +10,19 @@
   const btn = $('voiceBtn'), roomSel = $('voiceRoom');
   const peopleEl = $('voicePeople'), audioBox = $('voiceAudio');
 
-  const ICE = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const ICE = {
+  iceServers: [
+    {
+      urls: 'stun:stun.l.google.com:19302'
+    },
+    {
+      urls: 'turn:TURN_SERVER:3478',
+      username: 'TURN_USERNAME',
+      credential: 'TURN_PASSWORD'
+    }
+  ]
+};
+
 
   let stream = null, channel = null, myId = null, myName = '';
   let peers = {};          // userId -> { pc, audio, pending: [] }
