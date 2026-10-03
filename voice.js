@@ -141,6 +141,7 @@
     }
     peopleEl.innerHTML = '';
     muteB.textContent = 'Səssiz';
+    setVoicePresence(null);
     setUI(false);
     setStatus(message || 'Otaqdan çıxdınız');
   };
@@ -195,17 +196,57 @@
         }
       })
       .on('presence', { event: 'leave' }, ({ key }) => closePeer(key))
-      .subscribe(async (status, err) => {
-  if (status === 'SUBSCRIBED') {
-    await channel.track({ name: myName });
-    setUI(true);
-    setStatus('Qoşuldunuz: ' + roomSel.options[roomSel.selectedIndex].text);
-  } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-    console.error('Realtime status:', status, err);
-    leave('Qoşulmaq alınmadı. Konsola baxın (F12).');
-  }
-});
+            .subscribe(async (status, err) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ name: myName });
+          setVoicePresence(room);
+          setUI(true);
+          setStatus('Qoşuldunuz: ' + names[room]);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.error('Realtime status:', status, err);
+          leave('Qoşulmaq alınmadı. Konsola baxın (F12).');
+        }
+      });
   };
+  // ===== AKTİV SAYĞACI (hamı üçün, adsız) =====
+  const names = {};
+  [...roomSel.options].forEach(o => { names[o.value] = o.textContent; });
+
+  const badge = document.createElement('span');
+  badge.className = 'voice-badge';
+  badge.hidden = true;
+  btn.appendChild(badge);
+
+  const countCh = sb.channel('voice-count', {
+    config: { presence: { key: 'v' + Math.random().toString(36).slice(2) } }
+  });
+
+  const renderCounts = () => {
+    const counts = {};
+    let total = 0;
+    Object.values(countCh.presenceState()).forEach(list => {
+      list.forEach(m => {
+        if (m.room) { counts[m.room] = (counts[m.room] || 0) + 1; total++; }
+      });
+    });
+    badge.textContent = total;
+    badge.hidden = total === 0;
+    btn.title = total ? 'Səsli otaqda ' + total + ' nəfər aktivdir' : 'Səsli otaq';
+    [...roomSel.options].forEach(o => {
+      const c = counts[o.value] || 0;
+      o.textContent = names[o.value] + (c ? ' (' + c + ')' : '');
+    });
+  };
+
+  countCh.on('presence', { event: 'sync' }, renderCounts).subscribe();
+
+  const setVoicePresence = async room => {
+    try {
+      if (room) await countCh.track({ room });
+      else await countCh.untrack();
+    } catch (e) {}
+  };
+
 
   // Düymələr
   btn.onclick = () => { panel.hidden = !panel.hidden; };
