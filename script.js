@@ -8,14 +8,17 @@ const AUTH_READY = !SUPABASE_URL.startsWith("BURA") && !SUPABASE_KEY.startsWith(
 const sb = AUTH_READY ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let ME = null;     // istifadəçi adı, null = qonaq
+let ME_ID = null, ME_EMAIL = "";   // profil ayarları üçün
 let draft = {};    // xəta olanda yazılanları itirməmək üçün
 
 // Sessiyaya görə profili bazadan yükləyir
 async function loadMe(session) {
-  if (!sb || !session) { ME = null; return; }
+  if (!sb || !session) { ME = null; ME_ID = null; ME_EMAIL = ""; return; }
   const { data } = await sb.from("profiles")
     .select("username, points").eq("id", session.user.id).single();
   if (data) {
+    ME_ID = session.user.id;
+    ME_EMAIL = session.user.email || "";
     ME = data.username;
     state.points[ME] = data.points;
   }
@@ -137,8 +140,10 @@ function renderAuth() {
     box.innerHTML = `<button class="link" data-act="go" data-view="login">Daxil ol</button>
       <button class="btn alt" data-act="go" data-view="register">Qeydiyyat</button>`;
   } else {
-    box.innerHTML = `<span class="avatar" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>
-      <span class="me">${esc(ME)} · <b>${state.points[ME] || 0}</b> xal</span>
+    box.innerHTML = `<button class="me-btn" data-act="go" data-view="profile" title="Profil və ayarlar" aria-label="Profil və ayarlar">
+        <span class="avatar" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>
+        <span class="me">${esc(ME)} · <b>${state.points[ME] || 0}</b> xal</span>
+      </button>
       <button class="link" data-act="logout">Çıxış</button>`;
   }
 }
@@ -150,6 +155,7 @@ function render() {
   if (view.name === "list") app.innerHTML = n + listHTML();
   else if (view.name === "detail") app.innerHTML = n + detailHTML();
   else if (view.name === "board") app.innerHTML = n + boardHTML();
+  else if (view.name === "profile") app.innerHTML = n + (ME ? profileHTML() : authHTML("login"));
   else if (view.name === "login") app.innerHTML = n + authHTML("login");
   else if (view.name === "register") app.innerHTML = n + authHTML("register");
   else app.innerHTML = n + newHTML();
@@ -341,6 +347,82 @@ function boardHTML() {
     <p class="hint">Xal: tapşırıq həlli, faydalı cavab (+15), suala və cavaba səs (+2).</p>`;
 }
 
+function profileHTML() {
+  const p = state.points[ME] || 0;
+  const nQ = state.questions.filter(q => q.author === ME).length;
+  const nA = state.questions.reduce((s, q) => s + q.answers.filter(a => a.author === ME).length, 0);
+  return `<h1>Profilim</h1>
+    <div class="card profile-head">
+      <span class="avatar big" aria-hidden="true">${esc(ME[0].toUpperCase())}</span>
+      <div>
+        <h2>${esc(ME)}</h2>
+        <p class="meta">${esc(ME_EMAIL)}</p>
+        <p class="meta">${level(p)} · ${p} xal · ${nQ} sual · ${nA} cavab</p>
+      </div>
+    </div>
+
+    <form class="card" data-form="setname" novalidate>
+      <h3>İstifadəçi adı</h3>
+      <label for="sn">Yeni ad</label>
+      <input id="sn" name="name" maxlength="20" value="${esc(ME)}" autocomplete="username" required>
+      <div class="row" style="margin-top:14px"><button class="btn">Adı yenilə</button></div>
+    </form>
+
+    <form class="card" data-form="setpass" novalidate>
+      <h3>Parol</h3>
+      <label for="sp">Yeni parol</label>
+      <input id="sp" name="pass" type="password" autocomplete="new-password">
+      <label for="sp2">Yeni parolu təkrarlayın</label>
+      <input id="sp2" name="pass2" type="password" autocomplete="new-password">
+      <p class="hint">Ən azı 8 simvol.</p>
+      <div class="row" style="margin-top:14px"><button class="btn">Parolu yenilə</button></div>
+    </form>
+
+    <div class="card">
+      <h3>Hesab</h3>
+      <div class="row"><button class="btn alt" data-act="logout">Çıxış et</button></div>
+    </div>`;
+}
+
+// Profil ayarlarını saxlayır (ad və parol)
+async function doSettings(kind, d) {
+  const fail = t => { note = { text: t, bad: true }; render(); };
+  if (!sb || !ME_ID) return fail("Əməliyyat üçün yenidən daxil olun.");
+
+  if (kind === "setname") {
+    const name = (d.name || "").trim();
+    if (name.length < 3) return fail("İstifadəçi adı ən azı 3 simvol olmalıdır.");
+    if (name === ME) return fail("Bu, artıq cari adınızdır.");
+
+    // Başqasında eyni ad varmı? (öz hesabınız sayılmır)
+    const safe = name.replace(/[%_\\]/g, "\\$&");
+    const { data: taken } = await sb.from("profiles").select("id")
+      .ilike("username", safe).neq("id", ME_ID).limit(1);
+    if (taken && taken.length) return fail("Bu ad artıq məşğuldur.");
+
+    const { error } = await sb.from("profiles").update({ username: name }).eq("id", ME_ID);
+    if (error) return fail("Ad dəyişdirilmədi: " + error.message);
+
+    // Yerli məlumatlarda köhnə adı yeni adla əvəz edir
+    const old = ME;
+    state.points[name] = state.points[old] || 0;
+    delete state.points[old];
+    state.questions.forEach(q => {
+      if (q.author === old) q.author = name;
+      q.answers.forEach(a => { if (a.author === old) a.author = name; });
+    });
+    ME = name;
+    note = { text: "İstifadəçi adı yeniləndi." };
+  } else {
+    if ((d.pass || "").length < 8) return fail("Parol ən azı 8 simvol olmalıdır.");
+    if (d.pass !== d.pass2) return fail("Parollar eyni deyil.");
+    const { error } = await sb.auth.updateUser({ password: d.pass });
+    if (error) return fail("Parol dəyişdirilmədi: " + error.message);
+    note = { text: "Parol yeniləndi." };
+  }
+  save(); render();
+}
+
 // ============ 6. GİRİŞ VƏ QEYDİYYAT ============
 function askLogin() {
   view = { name: "login", area: "Hamısı", id: null };
@@ -464,7 +546,7 @@ if (act === "pw") {
   }
 
   // Giriş tələb edən əməliyyatlar
-  if ((["voteq", "votea", "accept"].includes(act) || (act === "go" && b.dataset.view === "new")) && !ME) {
+  if ((["voteq", "votea", "accept"].includes(act) || (act === "go" && ["new", "profile"].includes(b.dataset.view))) && !ME) {
     return askLogin();
   }
 
@@ -490,6 +572,7 @@ app.addEventListener("submit", e => {
 
   if (kind === "login" || kind === "register") return doAuth(kind, d);
   if (!ME) return askLogin();
+  if (kind === "setname" || kind === "setpass") return doSettings(kind, d);
 
   if (kind === "new") {
     const isCheck = d.type === "check";

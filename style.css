@@ -423,3 +423,13 @@ body{transition:background-color .25s ease, color .25s ease}
     filter: blur(0);
   }
 }
+
+/* =========================================
+   PROFİL VƏ AYARLAR
+   ========================================= */
+.me-btn{display:flex;align-items:center;gap:8px;background:none;border:0;padding:3px 10px 3px 3px;border-radius:999px;cursor:pointer}
+.me-btn:hover{background:var(--soft)}
+.avatar.big{width:64px;height:64px;font-size:26px}
+.profile-head{display:flex;gap:18px;align-items:center}
+.profile-head h2{margin-bottom:2px}
+.profile-head .meta{margin:2px 0 0}
