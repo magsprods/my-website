@@ -165,6 +165,8 @@ function render() {
   else if (view.name === "detail") app.innerHTML = n + detailHTML();
   else if (view.name === "board") app.innerHTML = n + boardHTML();
   else if (view.name === "profile") app.innerHTML = n + (ME ? profileHTML() : authHTML("login"));
+  else if (view.name === "forgot") app.innerHTML = n + forgotHTML();
+  else if (view.name === "newpass") app.innerHTML = n + newpassHTML();
   else if (view.name === "login") app.innerHTML = n + authHTML("login");
   else if (view.name === "register") app.innerHTML = n + authHTML("register");
   else app.innerHTML = n + newHTML();
@@ -339,6 +341,7 @@ function authHTML(mode) {
     </svg>
   </button>
 </div>
+      ${reg ? "" : `<p class="hint"><button type="button" class="link" data-act="go" data-view="forgot">Şifrəni unutmusunuz?</button></p>`}
       ${reg ? `<label for="ac">Parolu təkrarlayın</label>
         <div class="pw"><input id="ac" name="pass2" type="password" autocomplete="new-password" required></div>
         <p class="hint">Ən azı 8 simvol.</p>` : ""}
@@ -346,6 +349,49 @@ function authHTML(mode) {
     </form>
     <p class="auth-switch">${reg ? "Hesabınız var?" : "Hesabınız yoxdur?"}
       <button class="link" data-act="go" data-view="${reg ? "login" : "register"}">${reg ? "Daxil ol" : "Qeydiyyat"}</button></p>
+  </div>`;
+}
+
+// Göz düyməsi olan parol xanası (handle-dakı "pw" əməliyyatı işlədir)
+function pwField(id, name, label, ac) {
+  return `<label for="${id}">${label}</label>
+    <div class="pw">
+      <input id="${id}" name="${name}" type="password" autocomplete="${ac}">
+      <button type="button" class="pw-btn" data-act="pw" aria-label="Şifrəni göstər" title="Şifrəni göstər">
+        <svg class="pw-eye" viewBox="0 0 24 24" aria-hidden="true">
+          <path class="pw-eye-outline" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/>
+          <circle class="pw-eye-pupil" cx="12" cy="12" r="2.7"/>
+          <path class="pw-eye-closed" d="M3 12c2.8 2.2 5.8 3.3 9 3.3s6.2-1.1 9-3.3"/>
+        </svg>
+      </button>
+    </div>`;
+}
+
+// "Şifrəni unutdum": email yazılır, sıfırlama linki göndərilir
+function forgotHTML() {
+  return `<div class="auth-card">
+    <h1>Şifrəni bərpa et</h1>
+    <p class="area-info">Emailinizi yazın, parolu yeniləmək üçün link göndərək.</p>
+    <form data-form="forgot" novalidate>
+      <label for="fe">Email</label>
+      <input id="fe" name="email" type="email" autocomplete="email" value="${esc(draft.email || "")}" required>
+      <div class="row" style="margin-top:20px"><button class="btn">Link göndər</button></div>
+    </form>
+    <p class="auth-switch"><button class="link" data-act="go" data-view="login">← Daxil ol səhifəsinə qayıt</button></p>
+  </div>`;
+}
+
+// Emaildəki linkə basandan sonra açılan yeni parol ekranı
+function newpassHTML() {
+  return `<div class="auth-card">
+    <h1>Yeni parol</h1>
+    <p class="area-info">Hesabınız üçün yeni parol təyin edin.</p>
+    <form data-form="newpass" novalidate>
+      ${pwField("np1", "pass", "Yeni parol", "new-password")}
+      ${pwField("np2", "pass2", "Yeni parolu təkrarlayın", "new-password")}
+      <p class="hint">Ən azı 8 simvol.</p>
+      <div class="row" style="margin-top:20px"><button class="btn">Parolu yenilə</button></div>
+    </form>
   </div>`;
 }
 
@@ -436,10 +482,9 @@ function profileHTML() {
 
     <form class="card" data-form="setpass" novalidate>
       <h3>Parol</h3>
-      <label for="sp">Yeni parol</label>
-      <input id="sp" name="pass" type="password" autocomplete="new-password">
-      <label for="sp2">Yeni parolu təkrarlayın</label>
-      <input id="sp2" name="pass2" type="password" autocomplete="new-password">
+      ${pwField("spc", "cur", "Cari parol", "current-password")}
+      ${pwField("sp", "pass", "Yeni parol", "new-password")}
+      ${pwField("sp2", "pass2", "Yeni parolu təkrarlayın", "new-password")}
       <p class="hint">Ən azı 8 simvol.</p>
       <div class="row" style="margin-top:14px"><button class="btn">Parolu yenilə</button></div>
     </form>
@@ -480,8 +525,15 @@ async function doSettings(kind, d) {
     ME = name;
     note = { text: "İstifadəçi adı yeniləndi." };
   } else {
-    if ((d.pass || "").length < 8) return fail("Parol ən azı 8 simvol olmalıdır.");
-    if (d.pass !== d.pass2) return fail("Parollar eyni deyil.");
+    if (!d.cur) return fail("Cari parolu yazın.");
+    if ((d.pass || "").length < 8) return fail("Yeni parol ən azı 8 simvol olmalıdır.");
+    if (d.pass !== d.pass2) return fail("Yeni parollar eyni deyil.");
+    if (d.pass === d.cur) return fail("Yeni parol cari parolla eyni ola bilməz.");
+
+    // Cari parol düzgündürmü? (kimsə açıq qalmış brauzerdən parolu dəyişməsin)
+    const { error: ce } = await sb.auth.signInWithPassword({ email: ME_EMAIL, password: d.cur });
+    if (ce) return fail("Cari parol səhvdir.");
+
     const { error } = await sb.auth.updateUser({ password: d.pass });
     if (error) return fail("Parol dəyişdirilmədi: " + error.message);
     note = { text: "Parol yeniləndi." };
@@ -538,6 +590,40 @@ async function doAuth(kind, d) {
   draft = {};
   view = { name: "list", area: "Hamısı", id: null };
   note = { text: "Xoş gəldiniz, " + ME + "!" };
+  save(); render();
+}
+
+async function doForgot(d) {
+  const email = (d.email || "").trim().toLowerCase();
+  draft = { email: d.email || "" };
+  const fail = t => { note = { text: t, bad: true }; render(); };
+  if (!sb) return fail("Giriş sistemi hələ qoşulmayıb.");
+  if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Email düzgün deyil.");
+
+  // Link sayta qayıdacaq (GitHub Pages ünvanı Supabase-də icazə verilməlidir)
+  const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  if (error) return fail("Link göndərilmədi: " + error.message);
+
+  draft = {};
+  view = { name: "login", area: "Hamısı", id: null };
+  // Hesabın olub-olmadığını açıqlamamaq üçün cavab həmişə eynidir
+  note = { text: "Bu email ilə hesab varsa, parolu yeniləmək üçün link göndərildi. Spam qovluğuna da baxın." };
+  render();
+}
+
+async function doNewPass(d) {
+  const fail = t => { note = { text: t, bad: true }; render(); };
+  if (!sb) return fail("Giriş sistemi hələ qoşulmayıb.");
+  if ((d.pass || "").length < 8) return fail("Parol ən azı 8 simvol olmalıdır.");
+  if (d.pass !== d.pass2) return fail("Parollar eyni deyil.");
+
+  const { error } = await sb.auth.updateUser({ password: d.pass });
+  if (error) return fail("Parol dəyişdirilmədi: " + error.message);
+
+  const { data: { session } } = await sb.auth.getSession();
+  await loadMe(session);
+  view = { name: "list", area: "Hamısı", id: null };
+  note = { text: "Parol yeniləndi. Xoş gəldiniz!" };
   save(); render();
 }
 
@@ -647,6 +733,8 @@ app.addEventListener("submit", e => {
   const q = state.questions.find(x => x.id === +f.dataset.id);
 
   if (kind === "login" || kind === "register") return doAuth(kind, d);
+  if (kind === "forgot") return doForgot(d);
+  if (kind === "newpass") return doNewPass(d);
   if (!ME) return askLogin();
   if (kind === "setname" || kind === "setpass") return doSettings(kind, d);
 
@@ -687,3 +775,13 @@ themeBtn.addEventListener("click", () => {
 // ============ 9. BAŞLANĞIC ============
 render();
 initAuth();
+
+// Emaildəki "parolu sıfırla" linki ilə gələndə yeni parol ekranını göstərir
+if (sb) {
+  sb.auth.onAuthStateChange(ev => {
+    if (ev === "PASSWORD_RECOVERY") {
+      view = { name: "newpass", area: "Hamısı", id: null };
+      render();
+    }
+  });
+}
