@@ -153,7 +153,7 @@ function renderAuth() {
         ${avatarHTML(false)}
         <span class="me">${esc(ME)} · <b>${state.points[ME] || 0}</b> xal</span>
       </button>
-      <button class="link" data-act="logout">Çıxış</button>`;
+      <button class="logout-btn" data-act="logout" aria-label="Çıxış"><span class="out-emoji" aria-hidden="true">🚪</span><span class="out-text">Çıxış</span></button>`;
   }
 }
 
@@ -446,7 +446,7 @@ function profileHTML() {
 
     <div class="card">
       <h3>Hesab</h3>
-      <div class="row"><button class="btn alt" data-act="logout">Çıxış et</button></div>
+      <div class="row"><button class="logout-btn big" data-act="logout"><span class="out-emoji" aria-hidden="true">🚪</span><span class="out-text">Çıxış et</span></button></div>
     </div>`;
 }
 
@@ -611,7 +611,10 @@ if (act === "pw") {
       note = { text: "Çıxış etdiniz." };
       render();
     };
-    if (sb) sb.auth.signOut().then(done); else done();
+    // Animasiya oynasın, sonra çıxış olsun
+    b.classList.add("leaving");
+    b.disabled = true;
+    setTimeout(() => { if (sb) sb.auth.signOut().then(done); else done(); }, 450);
     return;
   }
 
