@@ -435,3 +435,24 @@ body{transition:background-color .25s ease, color .25s ease}
 .profile-head .meta{margin:2px 0 0}
 
 img.avatar{object-fit:cover;display:block}
+
+
+/* =========================================
+   TELEFON: yuxarı panel iki sıraya bölünür
+   1-ci sıra: logo ... tema + profil (sağda)
+   2-ci sıra: Suallar, Reytinq ... Sual yaz
+   ========================================= */
+@media(max-width:640px){
+  .bar{justify-content:flex-start;gap:6px 8px;padding:10px 14px}
+  .bar-l,.bar-r{display:contents}          /* içindəkilər birbaşa .bar-ın uşağı olur */
+
+  .bar .logo{order:1;margin-right:auto}      /* logo solda, qalanları sağa itir */
+  .bar .icon-btn{order:2}                    /* tema düyməsi */
+  .bar #auth{order:3;margin-left:0}          /* profil / daxil ol */
+  .bar::after{content:"";order:4;flex-basis:100%;height:0}   /* sətir kəsici */
+  .bar-l .link{order:5}                      /* Suallar, Reytinq */
+  .bar-r > .btn{order:6;margin-left:auto}    /* Sual yaz (ikinci sıranın sağında) */
+
+  #auth{gap:4px}
+  .bar .link{padding:6px 8px}
+}
