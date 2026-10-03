@@ -28,10 +28,22 @@ button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 
 /* ===== 3. ƏN YUXARI PANEL ===== */
-.topbar{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar{max-width:none;margin:0;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.bar-l,.bar-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.logo{font-weight:700;font-size:20px;letter-spacing:-.03em;text-decoration:none;color:var(--fg);margin-right:10px}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+  border-bottom:1px solid transparent;
+}
+.topbar.scrolled{border-bottom-color:var(--line)}
+.bar{height:64px;padding:0 clamp(16px,3vw,32px);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bar-l,.bar-r{display:flex;align-items:center;gap:6px}
+.logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.03em;text-decoration:none;color:var(--fg)}
+.logo-mark{fill:currentColor;flex:none}
+.logo-mark rect{transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.logo:hover .logo-mark rect:nth-child(1){transform:translateY(-1.5px)}
+.logo:hover .logo-mark rect:nth-child(2){transform:translateY(-2.5px);transition-delay:.04s}
+.logo:hover .logo-mark rect:nth-child(3){transform:translateY(-3.5px);transition-delay:.08s}
 .me{font-size:14px;color:var(--mute);margin-left:4px}
 .me b{color:var(--fg);font-weight:600}
 
@@ -58,15 +70,25 @@ button,input,select,textarea{font:inherit;color:inherit}
 :root[data-theme="dark"] .i-sun{opacity:1;transform:rotate(0) scale(1)}
 
 /* ===== 5. BÖYÜK BAŞLIQ (ana səhifə) ===== */
-.intro{margin:0 0 12px}
-.intro h1{font-size:clamp(38px,7vw,64px);line-height:1.04;letter-spacing:-.035em;margin-bottom:18px;max-width:16ch}
+.intro{position:relative;margin:0 0 12px;padding-top:8px}
+.intro h1{font-size:clamp(40px,7.4vw,68px);line-height:1.02;letter-spacing:-.04em;margin-bottom:20px;max-width:16ch;text-wrap:balance}
 .intro p,.area-info{color:var(--mute);font-size:18px;max-width:52ch;margin:0}
-.stats{display:flex;gap:40px;margin:28px 0 8px}
-.stats b{display:block;font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1.1}
+.stats{display:inline-flex;margin:30px 0 8px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stats>div{padding:12px 26px 12px 20px;min-width:104px}
+.stats>div+div{border-left:1px solid var(--line)}
+.stats b{display:block;font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
 .stats span{font-size:13px;color:var(--mute)}
 
+.rise{position:absolute;right:0;top:0;display:flex;align-items:flex-end;gap:10px;height:230px;pointer-events:none}
+.rise i{display:block;width:46px;border:1px solid var(--line);border-radius:14px;background:var(--soft);transform-origin:bottom;animation:riseUp .9s cubic-bezier(.22,1,.36,1) backwards}
+.rise i:nth-child(1){height:42%}
+.rise i:nth-child(2){height:68%;animation-delay:.12s}
+.rise i:nth-child(3){height:100%;animation-delay:.24s}
+@keyframes riseUp{from{transform:scaleY(.08);opacity:0}to{transform:scaleY(1);opacity:1}}
+@media(max-width:860px){.rise{display:none}}
+
 /* ===== 6. SAHƏ FİLTRLƏRİ ===== */
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:24px 0 24px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:24px 0 24px;scroll-margin-top:84px}
 .chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:14px;color:var(--mute)}
 .chip:hover{border-color:var(--fg);color:var(--fg)}
 .chip.on{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
@@ -166,7 +188,10 @@ body{transition:background-color .25s ease, color .25s ease}
   .qgrid{grid-template-columns:1fr}
   .qcard{min-height:0}
   .how{grid-template-columns:1fr}
-  .stats{gap:28px}
+  .stats>div{padding:10px 16px 10px 14px;min-width:0}
+  .chips{flex-wrap:nowrap;overflow-x:auto;margin-left:-20px;margin-right:-20px;padding:0 20px 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;white-space:nowrap}
   .card{padding:18px}
   .checkform{flex-direction:column}
   .me{display:none}
@@ -438,27 +463,6 @@ img.avatar{object-fit:cover;display:block}
 
 
 /* =========================================
-   TELEFON: yuxarı panel iki sıraya bölünür
-   1-ci sıra: logo ... tema + profil (sağda)
-   2-ci sıra: Suallar, Reytinq ... Sual yaz
-   ========================================= */
-@media(max-width:640px){
-  .bar{justify-content:flex-start;gap:6px 8px;padding:10px 14px}
-  .bar-l,.bar-r{display:contents}          /* içindəkilər birbaşa .bar-ın uşağı olur */
-
-  .bar .logo{order:1;margin-right:auto}      /* logo solda, qalanları sağa itir */
-  .bar .icon-btn{order:2}                    /* tema düyməsi */
-  .bar #auth{order:3;margin-left:0}          /* profil / daxil ol */
-  .bar::after{content:"";order:4;flex-basis:100%;height:0}   /* sətir kəsici */
-  .bar-l .link{order:5}                      /* Suallar, Reytinq */
-  .bar-r > .btn{order:6;margin-left:auto}    /* Sual yaz (ikinci sıranın sağında) */
-
-  #auth{gap:4px}
-  .bar .link{padding:6px 8px}
-}
-
-
-/* =========================================
    ÇIXIŞ DÜYMƏSİ (emoji + animasiya)
    ========================================= */
 .logout-btn{
@@ -493,17 +497,7 @@ img.avatar{object-fit:cover;display:block}
   100%{transform:translateX(26px) rotate(18deg) scale(.6);opacity:0}
 }
 
-/* =========================================
-   TELEFON: iki sıra arasında xətt
-   ========================================= */
-@media(max-width:640px){
-  .bar::after{
-    height:1px;background:var(--line);
-    flex-basis:calc(100% + 28px);margin:2px -14px 0;   /* panelin kənarlarına qədər uzanır */
-  }
-  .bar{row-gap:8px}
-  .logout-btn{padding:5px 11px 5px 8px;font-size:14px}
-}
+@media(max-width:640px){ .logout-btn{padding:5px 11px 5px 8px;font-size:14px} }
 
 
 /* =========================================
@@ -530,79 +524,117 @@ body.modal-open{overflow:hidden}
 @keyframes modalFade{from{opacity:0}to{opacity:1}}
 @keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
 
-/* Lupa: yuxarı panelin sağında, "Daxil ol"un yanında. Basanda xana açılır. */
 
-.search-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  height: 40px;
-  margin: 0;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  overflow: hidden;
-  transition: width 0.35s ease, border-color 0.2s, box-shadow 0.2s;
+/* =========================================
+   AŞAĞI ÜZƏN PANEL: naviqasiya, axtarış, sual yaz, tema
+   Rənglər saytın öz dəyişənlərindən gəlir, ona görə tema ilə birlikdə dəyişir
+   ========================================= */
+body{padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px))}
+
+.dock{
+  position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  transform:translateX(-50%);z-index:60;max-width:calc(100% - 24px);
+  padding:6px;border-radius:999px;color:var(--fg);
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);
+  border:1px solid var(--line);box-shadow:0 10px 32px var(--shadow);
+  transition:background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+body.modal-open .dock{display:none}
+.dock-inner{display:flex;align-items:center;gap:4px}
+
+/* Səhifə keçidləri bir qrupdur: kiçik xətt onları əməliyyat düymələrindən ayırır */
+.dock-tabs{position:relative;display:flex;gap:2px;margin-right:6px;padding-right:6px}
+.dock-tabs::after{content:"";position:absolute;right:0;top:50%;width:1px;height:20px;transform:translateY(-50%);background:var(--line)}
+
+.dock .link{height:40px;padding:0 14px;transition:color .2s ease, background-color .2s ease, transform .15s ease}
+.dock .link.active{color:var(--fg);background:var(--soft)}
+.dock .link:active{transform:scale(.96)}
+.dock .btn{height:40px;padding:0 18px;white-space:nowrap}
+.dock .icon-btn{flex:none;width:40px;height:40px;border-color:transparent}
+.dock .icon-btn:hover{background:var(--soft);border-color:transparent}
+
+/* Axtarış: lupaya basanda xana sola doğru açılır */
+.search-wrap{
+  display:flex;align-items:center;justify-content:flex-end;flex:none;
+  width:40px;height:40px;border-radius:999px;overflow:hidden;
+  transition:width .35s ease, background-color .2s ease, box-shadow .2s ease;
+}
+.search-wrap.open{width:260px;background:var(--soft)}
+.search-wrap.open:focus-within{box-shadow:inset 0 0 0 1px var(--fg)}
+#searchInput{
+  flex:1;min-width:0;width:auto;height:100%;padding:0 0 0 16px;
+  border:0;border-radius:0;background:transparent;
+  font-size:16px; /* 16px olmalıdır, yoxsa iPhone avtomatik zoom edir */
+  -webkit-appearance:none;appearance:none;
+  visibility:hidden;opacity:0;
+  transition:opacity .25s ease, visibility 0s .35s;
+}
+#searchInput::-webkit-search-cancel-button{display:none}
+.search-wrap.open #searchInput{visibility:visible;opacity:1;transition:opacity .25s ease .1s, visibility 0s}
+.search-wrap.open #searchToggle:hover{background:transparent}
+
+/* Axtarışda nəticə yoxdur */
+.empty{text-align:center;color:var(--mute);padding:36px 0 8px}
+.empty p{margin:0 0 14px}
+
+@media(max-width:560px){
+  .dock .link{padding:0 10px;font-size:14px}
+  .dock .btn{padding:0 14px;font-size:14px}
+  .dock-tabs{margin-right:4px;padding-right:4px}
+
+  /* Axtarış açılanda qalan düymələr gizlənir, xana bütün eni tutur */
+  .dock:has(.search-wrap.open){width:calc(100% - 24px)}
+  .dock:has(.search-wrap.open) .dock-inner{width:100%}
+  .dock:has(.search-wrap.open) .dock-tabs,
+  .dock:has(.search-wrap.open) .btn,
+  .dock:has(.search-wrap.open) #theme{display:none}
+  .search-wrap.open{flex:1;width:100%}
+}
+@media(max-width:400px){
+  .dock .link{padding:0 8px}
+  .dock .btn{padding:0 12px}
 }
 
-/* Bağlı vəziyyət: yalnız dairəvi lupa düyməsi (ay düyməsi ilə eyni görünüş) */
-.search-wrap:not(.open) { width: 40px; }
-
-.search-wrap.open {
-  width: 260px;
-  border-color: rgba(128, 128, 128, 0.45);
+.site-footer{
+  margin-top:56px;
+  padding:20px 16px;
+  text-align:center;
+  font-size:14px;
+  background:var(--bg);
+  color:var(--mute);
+  border-top:1px solid var(--line);
+  transition:background-color .25s ease, color .25s ease, border-color .25s ease;
 }
+.site-footer p{margin:0}
 
-.search-wrap.open:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+/* ===== SƏSLİ OTAQ ===== */
+.voice{
+  position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);z-index:65;
+  width:min(360px,calc(100% - 24px));padding:16px;
+  background:var(--bg);color:var(--fg);
+  border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 32px var(--shadow);
+  animation:voiceIn .25s ease both;
 }
-
-#searchInput {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  padding: 0 0 0 16px;
-  border: 0;
-  outline: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 16px; /* 16px olmalıdır, yoxsa iPhone avtomatik zoom edir */
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.25s, visibility 0s 0.35s;
+.voice[hidden]{display:none}
+@keyframes voiceIn{
+  from{opacity:0;transform:translateX(-50%) translateY(14px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
 }
-
-.search-wrap.open #searchInput {
-  visibility: visible;
-  opacity: 1;
-  transition: opacity 0.25s 0.1s, visibility 0s;
-}
-
-#searchToggle { flex-shrink: 0; }
-
-/* Açıq olanda düymənin öz çərçivəsi ikiqat görünməsin */
-.search-wrap.open #searchToggle { border-color: transparent; background: transparent; }
-
-#noResults {
-  margin: 0;
-  padding: 24px 0;
-  text-align: center;
-  opacity: 0.7;
-}
-
-/* Mobil: açılanda panelin qalan düymələri gizlənir, xana bütün eni tutur */
-@media (max-width: 640px) {
-  .bar:has(.search-wrap.open) .bar-l,
-  .bar:has(.search-wrap.open) .bar-r > :not(.search-wrap) { display: none; }
-
-  .bar:has(.search-wrap.open) .bar-r { flex: 1; }
-
-  .search-wrap.open { width: 100%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .search-wrap,
-  #searchInput { transition: none; }
-}
+.voice-top{display:flex;justify-content:space-between;align-items:center}
+.voice-close{background:none;border:0;color:var(--mute);cursor:pointer;font-size:14px;padding:6px}
+.voice-close:hover{color:var(--fg)}
+.voice select{margin-top:12px;padding:8px 12px;font-size:15px}
+.voice select:disabled{opacity:.6}
+.voice-status{margin:12px 0 14px;font-size:14px;color:var(--mute)}
+.voice-people{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto}
+.voice-people:empty{display:none}
+.voice-people li{display:flex;align-items:center;gap:10px;font-size:14px}
+.voice-people .dot{width:8px;height:8px;border-radius:50%;background:var(--fg);flex:none}
+.voice-people li.me{color:var(--mute)}
+.voice-actions{display:flex;gap:8px;flex-wrap:wrap}
+.voice-actions .btn[hidden]{display:none}
+#voiceBtn.live{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
+.dock #voiceBtn.live:hover{background:var(--fg)}
