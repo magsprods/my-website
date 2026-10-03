@@ -529,3 +529,80 @@ img.avatar{object-fit:cover;display:block}
 body.modal-open{overflow:hidden}
 @keyframes modalFade{from{opacity:0}to{opacity:1}}
 @keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+
+/* Lupa: yuxarı panelin sağında, "Daxil ol"un yanında. Basanda xana açılır. */
+
+.search-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  height: 40px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: width 0.35s ease, border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Bağlı vəziyyət: yalnız dairəvi lupa düyməsi (ay düyməsi ilə eyni görünüş) */
+.search-wrap:not(.open) { width: 40px; }
+
+.search-wrap.open {
+  width: 260px;
+  border-color: rgba(128, 128, 128, 0.45);
+}
+
+.search-wrap.open:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+#searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 0 0 16px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px; /* 16px olmalıdır, yoxsa iPhone avtomatik zoom edir */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.25s, visibility 0s 0.35s;
+}
+
+.search-wrap.open #searchInput {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.25s 0.1s, visibility 0s;
+}
+
+#searchToggle { flex-shrink: 0; }
+
+/* Açıq olanda düymənin öz çərçivəsi ikiqat görünməsin */
+.search-wrap.open #searchToggle { border-color: transparent; background: transparent; }
+
+#noResults {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  opacity: 0.7;
+}
+
+/* Mobil: açılanda panelin qalan düymələri gizlənir, xana bütün eni tutur */
+@media (max-width: 640px) {
+  .bar:has(.search-wrap.open) .bar-l,
+  .bar:has(.search-wrap.open) .bar-r > :not(.search-wrap) { display: none; }
+
+  .bar:has(.search-wrap.open) .bar-r { flex: 1; }
+
+  .search-wrap.open { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-wrap,
+  #searchInput { transition: none; }
+}

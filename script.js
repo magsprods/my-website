@@ -821,3 +821,85 @@ if (sb) {
     }
   });
 }
+
+(() => {
+  'use strict';
+
+  // Sual kartlarının class adı. Sizin saytda fərqlidirsə, bura yazın.
+  const CARD_SELECTOR = '.question-card, .q-card, .question, article.card';
+
+  const app    = document.getElementById('app');
+  const wrap   = document.getElementById('searchWrap');
+  const input  = document.getElementById('searchInput');
+  const toggle = document.getElementById('searchToggle');
+  const empty  = document.getElementById('noResults');
+  if (!app || !wrap || !input || !toggle || !empty) return;
+
+  // Azərbaycan hərflərini sadələşdirir: "eziz" yazanda "əziz" də tapılsın
+  const MAP = { 'ə': 'e', 'ı': 'i', 'ö': 'o', 'ü': 'u', 'ş': 's', 'ç': 'c', 'ğ': 'g' };
+  const norm = (s) =>
+    s.toLocaleLowerCase('az').replace(/[əıöüşçğ]/g, (ch) => MAP[ch]).trim();
+
+  function apply() {
+    const q = norm(input.value);
+    const cards = app.querySelectorAll(CARD_SELECTOR);
+    let shown = 0;
+
+    cards.forEach((card) => {
+      const hit = !q || norm(card.textContent).includes(q);
+      card.style.display = hit ? '' : 'none';
+      if (hit) shown++;
+    });
+
+    empty.hidden = !(q && cards.length && shown === 0);
+  }
+
+  function isOpen() {
+    return wrap.classList.contains('open');
+  }
+
+  function open() {
+    wrap.classList.add('open');
+    toggle.setAttribute('aria-expanded', 'true');
+    setTimeout(() => input.focus(), 150);
+  }
+
+  function close() {
+    wrap.classList.remove('open');
+    toggle.setAttribute('aria-expanded', 'false');
+    input.value = '';
+    input.blur();
+    apply();
+  }
+
+  toggle.addEventListener('click', () => (isOpen() ? close() : open()));
+  input.addEventListener('input', apply);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      close();
+      toggle.focus();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    // Başqa səhifəyə keçəndə (Suallar, Reytinq, Sual yaz) axtarışı bağla
+    if (e.target.closest('[data-act="go"]')) {
+      if (isOpen()) close();
+      return;
+    }
+    // Boş olanda kənara basanda bağlansın
+    if (isOpen() && !input.value && !wrap.contains(e.target)) close();
+  });
+
+  // script.js suallar siyahısını yenidən çəkəndə (yeni sual, yeniləmə) filtr qalsın
+  let queued = false;
+  new MutationObserver(() => {
+    if (!input.value || queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      apply();
+    });
+  }).observe(app, { childList: true, subtree: true });
+})();
