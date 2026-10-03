@@ -825,24 +825,63 @@ if (sb) {
 (() => {
   'use strict';
 
-  // Sual kartlarının class adı. Sizin saytda fərqlidirsə, bura yazın.
-  const CARD_SELECTOR = '.question-card, .q-card, .question, article.card';
+  // İstəyə bağlı: sual kartlarının class adını bilirsinizsə yazın, məs. '.q-card'.
+  // Boş qalsa, kartlar səhifənin quruluşundan avtomatik tapılır.
+  const CARD_SELECTOR = '';
 
-  const app    = document.getElementById('app');
+  const root   = document.querySelector('.wrap') || document.getElementById('app');
   const wrap   = document.getElementById('searchWrap');
   const input  = document.getElementById('searchInput');
   const toggle = document.getElementById('searchToggle');
   const empty  = document.getElementById('noResults');
-  if (!app || !wrap || !input || !toggle || !empty) return;
+  if (!root || !wrap || !input || !toggle || !empty) {
+    console.warn('[axtarış] lazımi elementlər tapılmadı');
+    return;
+  }
 
   // Azərbaycan hərflərini sadələşdirir: "eziz" yazanda "əziz" də tapılsın
   const MAP = { 'ə': 'e', 'ı': 'i', 'ö': 'o', 'ü': 'u', 'ş': 's', 'ç': 'c', 'ğ': 'g' };
   const norm = (s) =>
     s.toLocaleLowerCase('az').replace(/[əıöüşçğ]/g, (ch) => MAP[ch]).trim();
 
+  const HEADINGS = 'h1,h2,h3,h4,h5';
+  const sig = (el) => el.tagName + '.' + el.className;
+
+  // Sual kartlarını tapır: başlığı olan və eyni quruluşda təkrarlanan qonşu elementlər
+  function findCards() {
+    if (CARD_SELECTOR) {
+      const list = [...root.querySelectorAll(CARD_SELECTOR)];
+      if (list.length) return list;
+    }
+
+    const groups = new Map();
+    root.querySelectorAll(HEADINGS).forEach((h) => {
+      let el = h;
+      while (el.parentElement && el !== root) {
+        const p = el.parentElement;
+        const s = sig(el);
+        const same = [...p.children].filter(
+          (c) => sig(c) === s && (c.matches(HEADINGS) || c.querySelector(HEADINGS))
+        );
+        if (same.length >= 2) {
+          const key = p; // eyni valideyn = eyni qrup
+          const g = groups.get(key) || new Set();
+          same.forEach((c) => g.add(c));
+          groups.set(key, g);
+          break;
+        }
+        el = p;
+      }
+    });
+
+    let best = [];
+    groups.forEach((g) => { if (g.size > best.length) best = [...g]; });
+    return best;
+  }
+
   function apply() {
     const q = norm(input.value);
-    const cards = app.querySelectorAll(CARD_SELECTOR);
+    const cards = findCards();
     let shown = 0;
 
     cards.forEach((card) => {
@@ -892,7 +931,7 @@ if (sb) {
     if (isOpen() && !input.value && !wrap.contains(e.target)) close();
   });
 
-  // script.js suallar siyahısını yenidən çəkəndə (yeni sual, yeniləmə) filtr qalsın
+  // script.js siyahını yenidən çəkəndə (kateqoriya seçimi, yeni sual) filtr qalsın
   let queued = false;
   new MutationObserver(() => {
     if (!input.value || queued) return;
@@ -901,5 +940,7 @@ if (sb) {
       queued = false;
       apply();
     });
-  }).observe(app, { childList: true, subtree: true });
+  }).observe(root, { childList: true, subtree: true });
+
+  console.info('[axtarış] hazırdır. Tapılan kart sayı:', findCards().length);
 })();
