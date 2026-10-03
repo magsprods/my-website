@@ -541,17 +541,48 @@ async function doSettings(kind, d) {
   save(); render();
 }
 
+// ============ GİRİŞ PƏNCƏRƏSİ (səhifədən çıxmadan) ============
+const modalBox = document.createElement("div");
+modalBox.id = "modal";
+modalBox.hidden = true;
+document.body.appendChild(modalBox);
+let modalMode = null;   // "login" | "register" | "forgot" | null (bağlı)
+let modalNote = null;
+
+function renderModal() {
+  if (!modalMode) {
+    modalBox.hidden = true;
+    modalBox.innerHTML = "";
+    document.body.classList.remove("modal-open");
+    return;
+  }
+  const n = modalNote ? `<div class="note ${modalNote.bad ? "bad" : ""}" role="status">${esc(modalNote.text)}</div>` : "";
+  const inner = modalMode === "forgot" ? forgotHTML() : authHTML(modalMode);
+  modalBox.innerHTML = `<div class="modal-back" data-act="closemodal"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Giriş">
+      <button class="modal-x" type="button" data-act="closemodal" aria-label="Bağla">✕</button>
+      ${n}${inner}
+    </div>`;
+  modalBox.hidden = false;
+  document.body.classList.add("modal-open");
+  const first = modalBox.querySelector("input");
+  if (first) first.focus();
+}
+function openModal(mode, text) { modalMode = mode; modalNote = text ? { text } : null; renderModal(); }
+function closeModal() { modalMode = null; modalNote = null; renderModal(); }
+
+modalBox.addEventListener("click", e => handle(e));
+document.addEventListener("keydown", e => { if (e.key === "Escape" && modalMode) closeModal(); });
+
 // ============ 6. GİRİŞ VƏ QEYDİYYAT ============
 function askLogin() {
-  view = { name: "login", area: "Hamısı", id: null };
-  note = { text: "Davam etmək üçün daxil olun." };
-  render();
+  openModal("login", "Davam etmək üçün daxil olun.");
 }
 
 async function doAuth(kind, d) {
   const email = (d.email || "").trim().toLowerCase();
   draft = { name: d.name || "", email: d.email || "" };
-  const fail = t => { note = { text: t, bad: true }; render(); };
+  const fail = t => { modalNote = { text: t, bad: true }; renderModal(); };
 
   if (!sb) return fail("Giriş sistemi hələ qoşulmayıb. script.js-də Supabase açarlarını yazın.");
   if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Email düzgün deyil.");
@@ -576,9 +607,7 @@ async function doAuth(kind, d) {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
       draft = {};
-      view = { name: "login", area: "Hamısı", id: null };
-      note = { text: "Emailinizə təsdiq linki göndərildi. Təsdiqlədikdən sonra daxil olun." };
-      return render();
+      return openModal("login", "Emailinizə təsdiq linki göndərildi. Təsdiqlədikdən sonra daxil olun.");
     }
   } else {
     const { error } = await sb.auth.signInWithPassword({ email, password: d.pass });
@@ -588,7 +617,7 @@ async function doAuth(kind, d) {
   const { data: { session } } = await sb.auth.getSession();
   await loadMe(session);
   draft = {};
-  view = { name: "list", area: "Hamısı", id: null };
+  closeModal();   // pəncərə bağlanır, istifadəçi olduğu səhifədə qalır
   note = { text: "Xoş gəldiniz, " + ME + "!" };
   save(); render();
 }
@@ -596,7 +625,7 @@ async function doAuth(kind, d) {
 async function doForgot(d) {
   const email = (d.email || "").trim().toLowerCase();
   draft = { email: d.email || "" };
-  const fail = t => { note = { text: t, bad: true }; render(); };
+  const fail = t => { modalNote = { text: t, bad: true }; renderModal(); };
   if (!sb) return fail("Giriş sistemi hələ qoşulmayıb.");
   if (!/^\S+@\S+\.\S+$/.test(email)) return fail("Email düzgün deyil.");
 
@@ -605,10 +634,8 @@ async function doForgot(d) {
   if (error) return fail("Link göndərilmədi: " + error.message);
 
   draft = {};
-  view = { name: "login", area: "Hamısı", id: null };
   // Hesabın olub-olmadığını açıqlamamaq üçün cavab həmişə eynidir
-  note = { text: "Bu email ilə hesab varsa, parolu yeniləmək üçün link göndərildi. Spam qovluğuna da baxın." };
-  render();
+  openModal("login", "Bu email ilə hesab varsa, parolu yeniləmək üçün link göndərildi. Spam qovluğuna da baxın.");
 }
 
 async function doNewPass(d) {
@@ -685,6 +712,14 @@ if (act === "pw") {
   return;
 }
 
+  // Giriş pəncərəsi
+  if (act === "closemodal") { closeModal(); return; }
+  if (act === "go" && ["login", "register", "forgot"].includes(b.dataset.view)) {
+    draft = {};
+    openModal(b.dataset.view);
+    return;
+  }
+
   // Profil şəkli
   if (act === "avpick") { const f = document.getElementById("avfile"); if (f) f.click(); return; }
   if (act === "avdel") { removeAvatar(); return; }
@@ -727,7 +762,7 @@ app.addEventListener("change", e => {
 });
 document.querySelector("nav").addEventListener("click", handle);
 
-app.addEventListener("submit", e => {
+document.addEventListener("submit", e => {
   e.preventDefault();
   const f = e.target, kind = f.dataset.form, d = Object.fromEntries(new FormData(f));
   const q = state.questions.find(x => x.id === +f.dataset.id);
@@ -780,6 +815,7 @@ initAuth();
 if (sb) {
   sb.auth.onAuthStateChange(ev => {
     if (ev === "PASSWORD_RECOVERY") {
+      closeModal();
       view = { name: "newpass", area: "Hamısı", id: null };
       render();
     }
